@@ -1,7 +1,10 @@
 // studentManagementService.js
 // Service layer for student management operations
 
-const API_URL = process.env.REACT_APP_STUDENT_API_URL/'students' || 'http://localhost:5000/api/students';
+const API_BASE = process.env.REACT_APP_STUDENT_API_URL;
+const API_URL = API_BASE && API_BASE.startsWith('http') 
+  ? API_BASE 
+  : 'http://localhost:5000/api/students';
 
 /**
  * Fetch all students from the API

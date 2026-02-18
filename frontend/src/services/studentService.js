@@ -1,7 +1,7 @@
 // studentService.js
 // Service layer for student-related API calls
 
-const API_URL = process.env.REACT_APP_STUDENT_API_URL/'students' || 'http://localhost:5000/api/students';
+const API_URL = process.env.REACT_APP_STUDENT_API_URL || 'http://localhost:5000/api/students';
 
 /**
  * Fetch all students from the API
