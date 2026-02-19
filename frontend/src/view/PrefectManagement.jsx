@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Search, UserPlus, Edit2, Trash2, Award, User, Phone, Calendar, X, Shield
 } from 'lucide-react';
+import * as prefectService from '../services/prefectService';
 
 // Helper component for Add Modal - moved outside to prevent re-renders
 const AddPrefectModal = ({ 
@@ -217,7 +218,6 @@ const EditPrefectModal = ({
   setEditFormData, 
   prefectPositions,
   onSubmit,
-  getStatusBasedOnDate
 }) => {
   if (!show || !selectedPrefect) return null;
 
@@ -303,9 +303,9 @@ const EditPrefectModal = ({
             </p>
             {editFormData.endDate && (
               <p className="text-xs font-medium mt-1" style={{
-                color: getStatusBasedOnDate(editFormData.endDate) === 'Active' ? 'green' : 'red'
+                color: prefectService.getStatusBasedOnDate(editFormData.endDate) === 'Active' ? 'green' : 'red'
               }}>
-                Status will be: {getStatusBasedOnDate(editFormData.endDate)}
+                Status will be: {prefectService.getStatusBasedOnDate(editFormData.endDate)}
               </p>
             )}
           </div>
@@ -359,7 +359,7 @@ const PrefectManagement = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'active', 'inactive'
+  const [activeTab, setActiveTab] = useState('all');
   const [formData, setFormData] = useState({
     studentId: '',
     position: '',
@@ -375,8 +375,6 @@ const PrefectManagement = () => {
     status: ''
   });
 
-  const API_URL = 'http://localhost:5000/api';
-
   const prefectPositions = [
     'Head Prefect',
     'Deputy Head Prefect',
@@ -388,36 +386,12 @@ const PrefectManagement = () => {
     'Social Service Prefect'
   ];
 
-  // Check if end date has passed and return appropriate status
-  const getStatusBasedOnDate = (endDate) => {
-    if (!endDate) return 'Active';
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(0, 0, 0, 0);
-    return end < today ? 'Inactive' : 'Active';
-  };
-
   const fetchPrefects = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_URL}/prefects`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch prefects');
-      }
-      
-      const data = await response.json();
-      
-      // Update status based on end date
-      const updatedPrefects = data.map(prefect => ({
-        ...prefect,
-        status: getStatusBasedOnDate(prefect.endDate)
-      }));
-      
-      setPrefects(updatedPrefects);
-      
+      const data = await prefectService.getAllPrefects();
+      setPrefects(data);
     } catch (error) {
       console.error('Error fetching prefects:', error);
       setError(error.message);
@@ -428,11 +402,7 @@ const PrefectManagement = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch(`${API_URL}/students`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch students');
-      }
-      const data = await response.json();
+      const data = await prefectService.getAllStudents();
       setStudents(data);
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -449,35 +419,12 @@ const PrefectManagement = () => {
       alert('Please fill all required fields');
       return;
     }
-    
+
     try {
-      const status = getStatusBasedOnDate(formData.endDate);
-      
-      const response = await fetch(`${API_URL}/prefects`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          status
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add prefect');
-      }
-
+      await prefectService.createPrefect(formData);
       alert('Prefect added successfully!');
       setShowAddModal(false);
-      setFormData({
-        studentId: '',
-        position: '',
-        startDate: '',
-        endDate: '',
-        responsibilities: ''
-      });
+      setFormData({ studentId: '', position: '', startDate: '', endDate: '', responsibilities: '' });
       setStudentSearchTerm('');
       setShowStudentDropdown(false);
       fetchPrefects();
@@ -494,49 +441,26 @@ const PrefectManagement = () => {
     }
 
     try {
-      const status = getStatusBasedOnDate(editFormData.endDate);
-      
-      const response = await fetch(`${API_URL}/prefects/${selectedPrefect._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...editFormData,
-          status
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update prefect');
-      }
-
+      await prefectService.updatePrefect(selectedPrefect._id, editFormData);
       alert('Prefect updated successfully!');
       setShowEditModal(false);
       setSelectedPrefect(null);
       fetchPrefects();
     } catch (error) {
       console.error('Error updating prefect:', error);
-      alert('Failed to update prefect. Please try again.');
+      alert(error.message || 'Failed to update prefect. Please try again.');
     }
   };
 
   const handleDelete = async (prefectId, studentName) => {
     if (window.confirm(`Are you sure you want to remove ${studentName} from prefects?`)) {
       try {
-        const response = await fetch(`${API_URL}/prefects/${prefectId}`, {
-          method: 'DELETE'
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete prefect');
-        }
-
+        await prefectService.deletePrefect(prefectId);
         setPrefects(prefects.filter(p => p._id !== prefectId));
         alert('Prefect removed successfully!');
       } catch (error) {
         console.error('Error deleting prefect:', error);
-        alert('Failed to delete prefect. Please try again.');
+        alert(error.message || 'Failed to delete prefect. Please try again.');
       }
     }
   };
@@ -575,33 +499,16 @@ const PrefectManagement = () => {
     prefect.student?._id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Separate active and inactive prefects for counts
   const activePrefects = filteredPrefects.filter(p => p.status === 'Active');
   const inactivePrefects = filteredPrefects.filter(p => p.status === 'Inactive');
 
-  // Filter by status based on active tab
   const getDisplayedPrefects = () => {
-    console.log('Active Tab:', activeTab);
-    console.log('All Prefects:', filteredPrefects.map(p => ({ name: p.student?.name, status: p.status })));
-    
-    if (activeTab === 'active') {
-      console.log('Showing Active:', activePrefects.map(p => ({ name: p.student?.name, status: p.status })));
-      return activePrefects;
-    } else if (activeTab === 'inactive') {
-      console.log('Showing Inactive:', inactivePrefects.map(p => ({ name: p.student?.name, status: p.status })));
-      return inactivePrefects;
-    }
-    console.log('Showing All:', filteredPrefects.map(p => ({ name: p.student?.name, status: p.status })));
+    if (activeTab === 'active') return activePrefects;
+    if (activeTab === 'inactive') return inactivePrefects;
     return filteredPrefects;
   };
 
   const displayedPrefects = getDisplayedPrefects();
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB');
-  };
 
   const PrefectDetailModal = () => {
     if (!selectedPrefect) return null;
@@ -658,19 +565,19 @@ const PrefectManagement = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Start Date</p>
-                  <p className="text-gray-800 font-medium">{formatDate(selectedPrefect.startDate)}</p>
+                  <p className="text-gray-800 font-medium">{prefectService.formatDate(selectedPrefect.startDate)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">End Date</p>
                   <p className="text-gray-800 font-medium">
-                    {selectedPrefect.endDate ? formatDate(selectedPrefect.endDate) : 'Currently Serving'}
+                    {selectedPrefect.endDate ? prefectService.formatDate(selectedPrefect.endDate) : 'Currently Serving'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Status</p>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    selectedPrefect.status === 'Active' 
-                      ? 'bg-green-100 text-green-800' 
+                    selectedPrefect.status === 'Active'
+                      ? 'bg-green-100 text-green-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
                     {selectedPrefect.status}
@@ -684,7 +591,7 @@ const PrefectManagement = () => {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <button 
+              <button
                 onClick={() => {
                   setShowModal(false);
                   handleEdit(selectedPrefect);
@@ -832,6 +739,7 @@ const PrefectManagement = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
@@ -847,7 +755,7 @@ const PrefectManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPrefects.map((prefect) => (
+                  {displayedPrefects.map((prefect) => (
                     <tr key={prefect._id} className="hover:bg-purple-50 transition-colors">
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-sm font-semibold text-purple-600">{prefect.student?._id}</span>
@@ -870,17 +778,17 @@ const PrefectManagement = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-600">{formatDate(prefect.startDate)}</span>
+                        <span className="text-sm text-gray-600">{prefectService.formatDate(prefect.startDate)}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-sm text-gray-600">
-                          {prefect.endDate ? formatDate(prefect.endDate) : '-'}
+                          {prefect.endDate ? prefectService.formatDate(prefect.endDate) : '-'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          prefect.status === 'Active' 
-                            ? 'bg-green-100 text-green-800' 
+                          prefect.status === 'Active'
+                            ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
                         }`}>
                           {prefect.status}
@@ -902,7 +810,7 @@ const PrefectManagement = () => {
                           >
                             <Edit2 size={18} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDelete(prefect._id, prefect.student?.name)}
                             className="text-red-600 hover:text-red-800 p-2 hover:bg-red-100 rounded-lg transition-all"
                             title="Remove Prefect"
@@ -917,6 +825,7 @@ const PrefectManagement = () => {
               </table>
             </div>
 
+            {/* Mobile Cards */}
             <div className="md:hidden divide-y divide-gray-200">
               {displayedPrefects.map((prefect) => (
                 <div key={prefect._id} className="p-4 hover:bg-purple-50 transition-colors">
@@ -935,14 +844,14 @@ const PrefectManagement = () => {
                       </span>
                     </div>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      prefect.status === 'Active' 
-                        ? 'bg-green-100 text-green-800' 
+                      prefect.status === 'Active'
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
                       {prefect.status}
                     </span>
                   </div>
-                  
+
                   <div className="space-y-2 mb-3">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <span className="font-medium">Grade:</span>
@@ -950,12 +859,12 @@ const PrefectManagement = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Calendar size={16} className="text-gray-400" />
-                      <span>Start: {formatDate(prefect.startDate)}</span>
+                      <span>Start: {prefectService.formatDate(prefect.startDate)}</span>
                     </div>
                     {prefect.endDate && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar size={16} className="text-gray-400" />
-                        <span>End: {formatDate(prefect.endDate)}</span>
+                        <span>End: {prefectService.formatDate(prefect.endDate)}</span>
                       </div>
                     )}
                   </div>
@@ -968,14 +877,14 @@ const PrefectManagement = () => {
                       <User size={16} />
                       View
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleEdit(prefect)}
                       className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <Edit2 size={16} />
                       Edit
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDelete(prefect._id, prefect.student?.name)}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                     >
@@ -990,7 +899,7 @@ const PrefectManagement = () => {
       </div>
 
       {showModal && <PrefectDetailModal />}
-      
+
       <AddPrefectModal
         show={showAddModal}
         onClose={handleCloseAddModal}
@@ -1004,7 +913,7 @@ const PrefectManagement = () => {
         showStudentDropdown={showStudentDropdown}
         setShowStudentDropdown={setShowStudentDropdown}
       />
-      
+
       <EditPrefectModal
         show={showEditModal}
         onClose={handleCloseEditModal}
@@ -1013,7 +922,6 @@ const PrefectManagement = () => {
         setEditFormData={setEditFormData}
         prefectPositions={prefectPositions}
         onSubmit={handleUpdatePrefect}
-        getStatusBasedOnDate={getStatusBasedOnDate}
       />
     </div>
   );

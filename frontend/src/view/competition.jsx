@@ -3,6 +3,7 @@ import {
   Search, Plus, Edit2, Trash2, ChevronDown, ChevronUp, Calendar, 
   MapPin, Users, X, UserPlus, UserMinus
 } from 'lucide-react';
+import * as competitionService from '../services/competitionService';
 
 const CompetitionManagement = () => {
   const [competitions, setCompetitions] = useState([]);
@@ -17,13 +18,11 @@ const CompetitionManagement = () => {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [expandedYears, setExpandedYears] = useState({});
 
-  const API_URL = 'http://localhost:5000/api';
-
   const [formData, setFormData] = useState({
     category: '',
     venue: '',
     date: '',
-    selectedStudents: [] // Add this for selected students
+    selectedStudents: [],
   });
 
   useEffect(() => {
@@ -35,17 +34,13 @@ const CompetitionManagement = () => {
   const fetchCompetitions = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/competitions`);
-      if (!response.ok) throw new Error('Failed to fetch competitions');
-      const data = await response.json();
+      const data = await competitionService.getAllCompetitions();
       setCompetitions(data);
-      
+
       // Auto expand all years
       const yearsExpanded = {};
       const uniqueYears = [...new Set(data.map(c => c.year))];
-      uniqueYears.forEach(year => {
-        yearsExpanded[year] = true;
-      });
+      uniqueYears.forEach(year => { yearsExpanded[year] = true; });
       setExpandedYears(yearsExpanded);
     } catch (error) {
       console.error('Error fetching competitions:', error);
@@ -56,16 +51,7 @@ const CompetitionManagement = () => {
 
   const fetchStudents = async () => {
     try {
-      console.log('Fetching students from:', `${API_URL}/students`);
-      const response = await fetch(`${API_URL}/students`);
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) throw new Error('Failed to fetch students');
-      
-      const data = await response.json();
-      console.log('Students loaded:', data);
-      console.log('Number of students:', data.length);
-      
+      const data = await competitionService.getAllStudents();
       setStudents(data);
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -75,9 +61,7 @@ const CompetitionManagement = () => {
 
   const fetchYears = async () => {
     try {
-      const response = await fetch(`${API_URL}/competitions/years`);
-      if (!response.ok) throw new Error('Failed to fetch years');
-      const data = await response.json();
+      const data = await competitionService.getCompetitionYears();
       setYears(data);
     } catch (error) {
       console.error('Error fetching years:', error);
@@ -87,45 +71,26 @@ const CompetitionManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // First create the competition
-      const url = modalMode === 'create' 
-        ? `${API_URL}/competitions`
-        : `${API_URL}/competitions/${selectedCompetition._id}`;
-      
-      const method = modalMode === 'create' ? 'POST' : 'PUT';
-      
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: formData.category,
-          venue: formData.venue,
-          date: formData.date
-        })
-      });
+      let savedCompetition;
 
-      if (!response.ok) throw new Error('Failed to save competition');
-      
-      const savedCompetition = await response.json();
-      
-      // If creating new competition and students are selected, add them
-      if (modalMode === 'create' && formData.selectedStudents.length > 0) {
-        for (const studentId of formData.selectedStudents) {
-          const student = students.find(s => s._id === studentId);
-          if (student) {
-            await fetch(`${API_URL}/competitions/${savedCompetition._id}/participants`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                studentId: student._id,
-                studentName: student.name,
-                grade: student.grade
-              })
-            });
-          }
+      if (modalMode === 'create') {
+        savedCompetition = await competitionService.createCompetition(formData);
+
+        // Add selected students if any
+        if (formData.selectedStudents.length > 0) {
+          await competitionService.addMultipleParticipants(
+            savedCompetition._id,
+            formData.selectedStudents,
+            students
+          );
         }
+      } else {
+        savedCompetition = await competitionService.updateCompetition(
+          selectedCompetition._id,
+          formData
+        );
       }
-      
+
       alert(`Competition ${modalMode === 'create' ? 'created' : 'updated'} successfully!`);
       setShowModal(false);
       resetForm();
@@ -139,10 +104,7 @@ const CompetitionManagement = () => {
   const handleDelete = async (competitionId) => {
     if (window.confirm('Are you sure you want to delete this competition?')) {
       try {
-        const response = await fetch(`${API_URL}/competitions/${competitionId}`, {
-          method: 'DELETE'
-        });
-        if (!response.ok) throw new Error('Failed to delete competition');
+        await competitionService.deleteCompetition(competitionId);
         alert('Competition deleted successfully!');
         fetchCompetitions();
         fetchYears();
@@ -154,21 +116,7 @@ const CompetitionManagement = () => {
 
   const handleAddStudent = async (student) => {
     try {
-      const response = await fetch(`${API_URL}/competitions/${selectedCompetition._id}/participants`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentId: student._id,
-          studentName: student.name,
-          grade: student.grade
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message);
-      }
-      
+      await competitionService.addParticipant(selectedCompetition._id, student);
       alert('Student added successfully!');
       fetchCompetitions();
       setShowAddStudentModal(false);
@@ -180,11 +128,7 @@ const CompetitionManagement = () => {
   const handleRemoveStudent = async (competitionId, studentId, studentName) => {
     if (window.confirm(`Remove ${studentName} from this competition?`)) {
       try {
-        const response = await fetch(
-          `${API_URL}/competitions/${competitionId}/participants/${studentId}`,
-          { method: 'DELETE' }
-        );
-        if (!response.ok) throw new Error('Failed to remove student');
+        await competitionService.removeParticipant(competitionId, studentId);
         alert('Student removed successfully!');
         fetchCompetitions();
       } catch (error) {
@@ -199,27 +143,20 @@ const CompetitionManagement = () => {
       category: competition.category,
       venue: competition.venue,
       date: competition.date.split('T')[0],
-      selectedStudents: []
+      selectedStudents: [],
     });
     setModalMode('edit');
     setShowModal(true);
   };
 
   const resetForm = () => {
-    setFormData({
-      category: '',
-      venue: '',
-      date: '',
-      selectedStudents: []
-    });
+    setFormData({ category: '', venue: '', date: '', selectedStudents: [] });
     setSelectedCompetition(null);
   };
 
   const groupedByYear = competitions.reduce((acc, comp) => {
     const year = comp.year;
-    if (!acc[year]) {
-      acc[year] = [];
-    }
+    if (!acc[year]) acc[year] = [];
     acc[year].push(comp);
     return acc;
   }, {});
@@ -228,27 +165,17 @@ const CompetitionManagement = () => {
     const filtered = groupedByYear[year].filter(comp =>
       comp.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
       comp.venue.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      comp.participants.some(p => 
+      comp.participants.some(p =>
         p.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.studentId.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
-    
+
     if (selectedYear === 'All' || year === selectedYear) {
-      if (filtered.length > 0) {
-        acc[year] = filtered;
-      }
+      if (filtered.length > 0) acc[year] = filtered;
     }
     return acc;
   }, {});
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
 
   if (loading) {
     return (
@@ -324,10 +251,7 @@ const CompetitionManagement = () => {
             {Object.keys(filteredGroupedByYear).sort((a, b) => b - a).map((year) => (
               <div key={year} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <button
-                  onClick={() => setExpandedYears(prev => ({
-                    ...prev,
-                    [year]: !prev[year]
-                  }))}
+                  onClick={() => setExpandedYears(prev => ({ ...prev, [year]: !prev[year] }))}
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white p-5 flex items-center justify-between transition-all"
                 >
                   <div className="flex items-center gap-4">
@@ -335,7 +259,8 @@ const CompetitionManagement = () => {
                     <div className="text-left">
                       <span className="text-2xl font-bold">Year {year}</span>
                       <p className="text-purple-100 text-sm">
-                        {filteredGroupedByYear[year].length} {filteredGroupedByYear[year].length === 1 ? 'Competition' : 'Competitions'}
+                        {filteredGroupedByYear[year].length}{' '}
+                        {filteredGroupedByYear[year].length === 1 ? 'Competition' : 'Competitions'}
                       </p>
                     </div>
                   </div>
@@ -355,7 +280,7 @@ const CompetitionManagement = () => {
                                 <div className="flex flex-col gap-2 mt-2">
                                   <div className="flex items-center gap-2 text-gray-600">
                                     <Calendar size={16} className="text-purple-600" />
-                                    <span className="text-sm font-medium">{formatDate(competition.date)}</span>
+                                    <span className="text-sm font-medium">{competitionService.formatDate(competition.date)}</span>
                                   </div>
                                   <div className="flex items-center gap-2 text-gray-600">
                                     <MapPin size={16} className="text-purple-600" />
@@ -365,7 +290,7 @@ const CompetitionManagement = () => {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleEdit(competition)}
@@ -402,7 +327,7 @@ const CompetitionManagement = () => {
                               Add Student
                             </button>
                           </div>
-                          
+
                           {competition.participants.length === 0 ? (
                             <p className="text-gray-500 text-sm text-center py-4">No participants yet</p>
                           ) : (
@@ -495,67 +420,62 @@ const CompetitionManagement = () => {
                 />
               </div>
 
-              {/* Student Selection Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Students {modalMode === 'create' && '(Optional)'}
-                </label>
-                <div className="border border-gray-300 rounded-lg p-3 max-h-60 overflow-y-auto">
-                  {students.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-4">No students available</p>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="mb-2">
-                        <input
-                          type="text"
-                          placeholder="Search students..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+              {/* Student Selection — only shown when creating */}
+              {modalMode === 'create' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Students (Optional)
+                  </label>
+                  <div className="border border-gray-300 rounded-lg p-3 max-h-60 overflow-y-auto">
+                    {students.length === 0 ? (
+                      <p className="text-gray-500 text-sm text-center py-4">No students available</p>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="mb-2">
+                          <input
+                            type="text"
+                            placeholder="Search students..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                        </div>
+                        {students
+                          .filter(student =>
+                            student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            student._id.toLowerCase().includes(searchTerm.toLowerCase())
+                          )
+                          .map(student => (
+                            <label
+                              key={student._id}
+                              className="flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedStudents.includes(student._id)}
+                                onChange={(e) => {
+                                  const updated = e.target.checked
+                                    ? [...formData.selectedStudents, student._id]
+                                    : formData.selectedStudents.filter(id => id !== student._id);
+                                  setFormData({...formData, selectedStudents: updated});
+                                }}
+                                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                              />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-800">{student.name}</p>
+                                <p className="text-xs text-gray-500">ID: {student._id} | Grade: {student.grade}</p>
+                              </div>
+                            </label>
+                          ))}
                       </div>
-                      {students
-                        .filter(student => 
-                          student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          student._id.toLowerCase().includes(searchTerm.toLowerCase())
-                        )
-                        .map(student => (
-                          <label
-                            key={student._id}
-                            className="flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.selectedStudents.includes(student._id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setFormData({
-                                    ...formData,
-                                    selectedStudents: [...formData.selectedStudents, student._id]
-                                  });
-                                } else {
-                                  setFormData({
-                                    ...formData,
-                                    selectedStudents: formData.selectedStudents.filter(id => id !== student._id)
-                                  });
-                                }
-                              }}
-                              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                            />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-800">{student.name}</p>
-                              <p className="text-xs text-gray-500">ID: {student._id} | Grade: {student.grade}</p>
-                            </div>
-                          </label>
-                        ))}
-                    </div>
+                    )}
+                  </div>
+                  {formData.selectedStudents.length > 0 && (
+                    <p className="text-sm text-purple-600 mt-2">
+                      {formData.selectedStudents.length} student(s) selected
+                    </p>
                   )}
                 </div>
-                {formData.selectedStudents.length > 0 && (
-                  <p className="text-sm text-purple-600 mt-2">
-                    {formData.selectedStudents.length} student(s) selected
-                  </p>
-                )}
-              </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button
@@ -601,7 +521,6 @@ const CompetitionManagement = () => {
                 />
               </div>
 
-              {/* Show loading or error state */}
               {students.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-2">No students available</p>
@@ -610,7 +529,7 @@ const CompetitionManagement = () => {
               ) : (
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {students
-                    .filter(student => 
+                    .filter(student =>
                       !selectedCompetition.participants.some(p => p.studentId === student._id) &&
                       (student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        student._id.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -633,11 +552,11 @@ const CompetitionManagement = () => {
                         </button>
                       </div>
                     ))}
-                  {students.filter(student => 
+                  {students.filter(student =>
                     !selectedCompetition.participants.some(p => p.studentId === student._id) &&
                     (student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                      student._id.toLowerCase().includes(searchTerm.toLowerCase()))
-                  ).length === 0 && students.length > 0 && (
+                  ).length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <p>All students are already added to this competition</p>
                     </div>
