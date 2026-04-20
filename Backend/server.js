@@ -7,6 +7,7 @@ const studentRoutes = require('./routes/student');
 const prefectRoutes = require('./routes/prefectRoutes');
 const competitionRoutes = require('./routes/competitionRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
+const userRoutes = require('./routes/userRoutes');
  // Import the Competition model for competitions
 
 const app = express();
@@ -21,6 +22,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/prefects', prefectRoutes);
 app.use('/api', competitionRoutes);
 app.use('/api/teachers', teacherRoutes);
+app.use('/api/users', userRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

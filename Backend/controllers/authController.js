@@ -44,6 +44,7 @@ exports.signup = async (req, res) => {
       password: hashedPassword,
       phone,
       role,
+      status: 'inactive' // Default status for new users
     });
 
     await newUser.save();
@@ -62,11 +63,13 @@ exports.login = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-
+ if (user.status === 'inactive') {
+      return res.status(403).json({ message: 'Your account is inactive. Please contact admin.' });
+    }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+const token = jwt.sign({ id: user._id, role: user.role, name: user.name  }, JWT_SECRET, { expiresIn: '1d' });
 
     res.status(200).json({ token });
   } catch (err) {
