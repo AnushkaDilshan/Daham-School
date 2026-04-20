@@ -208,10 +208,10 @@ const StudentManagement = () => {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors">
+              {/* <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors">
                 <Edit2 size={18} />
                 Edit Student
-              </button>
+              </button> */}
               <button
                 onClick={() => {
                   setShowModal(false);
@@ -434,12 +434,12 @@ const StudentManagement = () => {
                                     >
                                       <User size={18} />
                                     </button>
-                                    <button
+                                    {/* <button
                                       className="text-green-600 hover:text-green-800 p-2 hover:bg-green-100 rounded-lg transition-all"
                                       title="Edit Student"
                                     >
                                       <Edit2 size={18} />
-                                    </button>
+                                    </button> */}
                                     <button 
                                       onClick={() => handleDelete(student._id, student.name)}
                                       className="text-red-600 hover:text-red-800 p-2 hover:bg-red-100 rounded-lg transition-all"

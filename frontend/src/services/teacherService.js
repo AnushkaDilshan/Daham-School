@@ -3,14 +3,25 @@
 
 const API_URL = `${process.env.REACT_APP_API_URL}/teachers` || 'http://localhost:5000/api/teachers';
 
-/**
- * Fetch all teachers from the API
- * @returns {Promise<Array>} Array of teacher objects
- */
+const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`,
+});
+const handleUnauthorized = (status) => {
+  if (status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+};
+
+
 export const getAllTeachers = async () => {
   try {
-    const response = await fetch(API_URL);
-    
+    const response = await fetch(API_URL,{
+      headers: getAuthHeaders(),
+    }
+  );
+      handleUnauthorized(response.status);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -23,21 +34,15 @@ export const getAllTeachers = async () => {
   }
 };
 
-/**
- * Create a new teacher
- * @param {Object} teacherData - Teacher data object
- * @returns {Promise<Object>} Created teacher object
- */
+
 export const createTeacher = async (teacherData) => {
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+       headers: getAuthHeaders(),
       body: JSON.stringify(teacherData),
     });
-
+handleUnauthorized(response.status);
     const data = await response.json();
 
     if (!response.ok) {
@@ -51,22 +56,14 @@ export const createTeacher = async (teacherData) => {
   }
 };
 
-/**
- * Update an existing teacher
- * @param {string} teacherId - Teacher's database ID (_id)
- * @param {Object} teacherData - Updated teacher data
- * @returns {Promise<Object>} Updated teacher object
- */
 export const updateTeacher = async (teacherId, teacherData) => {
   try {
     const response = await fetch(`${API_URL}/${teacherId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+     headers: getAuthHeaders(),
       body: JSON.stringify(teacherData),
     });
-
+handleUnauthorized(response.status);
     const data = await response.json();
 
     if (!response.ok) {
@@ -80,17 +77,14 @@ export const updateTeacher = async (teacherId, teacherData) => {
   }
 };
 
-/**
- * Delete a teacher
- * @param {string} teacherId - Teacher's database ID (_id)
- * @returns {Promise<Object>} Response from server
- */
+
 export const deleteTeacher = async (teacherId) => {
   try {
     const response = await fetch(`${API_URL}/${teacherId}`, {
       method: 'DELETE',
+       headers: getAuthHeaders(),
     });
-
+    handleUnauthorized(response.status);
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.message || 'Failed to delete teacher');
@@ -103,15 +97,13 @@ export const deleteTeacher = async (teacherId) => {
   }
 };
 
-/**
- * Get a single teacher by ID
- * @param {string} teacherId - Teacher's database ID (_id)
- * @returns {Promise<Object>} Teacher object
- */
+
 export const getTeacherById = async (teacherId) => {
   try {
-    const response = await fetch(`${API_URL}/${teacherId}`);
-    
+    const response = await fetch(`${API_URL}/${teacherId}`, {
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -124,15 +116,14 @@ export const getTeacherById = async (teacherId) => {
   }
 };
 
-/**
- * Search teachers by query
- * @param {string} query - Search query string
- * @returns {Promise<Array>} Filtered array of teachers
- */
+
 export const searchTeachers = async (query) => {
   try {
-    const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`);
-    
+    const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`, {
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -146,13 +137,7 @@ export const searchTeachers = async (query) => {
   }
 };
 
-/**
- * Clean teacher data before submission
- * Removes empty strings and undefined values
- * @param {Object} data - Raw form data
- * @param {string} mode - 'add' or 'edit' mode
- * @returns {Object} Cleaned data object
- */
+
 export const cleanTeacherData = (data, mode = 'add') => {
   const cleanedData = { ...data };
   

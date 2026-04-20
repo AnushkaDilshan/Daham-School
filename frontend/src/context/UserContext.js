@@ -1,22 +1,20 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+// UserContext.js
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const UserContext = createContext(null);
+const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    // Get user from localStorage on first render
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
+    // Rehydrate from token on refresh
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const { jwtDecode } = require('jwt-decode');
+        return jwtDecode(token); // ← decode full object on load
+      }
+    } catch (e) {}
+    return null;
   });
-
-  useEffect(() => {
-    // Save user to localStorage whenever it changes
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
-    }
-  }, [user]);
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
@@ -25,5 +23,4 @@ export const UserProvider = ({ children }) => {
   );
 };
 
-// Custom hook
 export const useUser = () => useContext(UserContext);

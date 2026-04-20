@@ -56,14 +56,14 @@ const Signup = () => {
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
           />
 
-          <select
+          {/* <select
             name="role"
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white"
           >
             <option value="user">User</option>
             <option value="admin">Admin</option>
-          </select>
+          </select> */}
 
           <input
             name="password"

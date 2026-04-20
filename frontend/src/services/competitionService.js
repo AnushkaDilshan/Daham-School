@@ -4,14 +4,22 @@
 const API_URL = `${process.env.REACT_APP_API_URL}` || 'http://localhost:5000/api';
 const COMPETITIONS_URL = `${API_URL}/competitions`;
 const STUDENTS_URL = `${API_URL}/students`;
-
-/**
- * Fetch all competitions from the API
- * @returns {Promise<Array>} Array of competition objects
- */
+const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`,
+});
+const handleUnauthorized = (status) => {
+  if (status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+};
 export const getAllCompetitions = async () => {
   try {
-    const response = await fetch(COMPETITIONS_URL);
+    const response = await fetch(COMPETITIONS_URL,{
+      headers: getAuthHeaders(),
+    });
+      handleUnauthorized(response.status);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -20,13 +28,13 @@ export const getAllCompetitions = async () => {
   }
 };
 
-/**
- * Fetch all available years for competitions
- * @returns {Promise<Array>} Array of year values
- */
+
 export const getCompetitionYears = async () => {
   try {
-    const response = await fetch(`${COMPETITIONS_URL}/years`);
+    const response = await fetch(`${COMPETITIONS_URL}/years`,{
+       headers: getAuthHeaders(),
+    });
+      handleUnauthorized(response.status);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -35,13 +43,13 @@ export const getCompetitionYears = async () => {
   }
 };
 
-/**
- * Fetch all students from the API
- * @returns {Promise<Array>} Array of student objects
- */
+
 export const getAllStudents = async () => {
   try {
-    const response = await fetch(STUDENTS_URL);
+    const response = await fetch(STUDENTS_URL, {
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -50,23 +58,19 @@ export const getAllStudents = async () => {
   }
 };
 
-/**
- * Create a new competition
- * @param {Object} competitionData - { category, venue, date }
- * @returns {Promise<Object>} Created competition object
- */
+
 export const createCompetition = async (competitionData) => {
   try {
     const response = await fetch(COMPETITIONS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
       body: JSON.stringify({
         category: competitionData.category,
         venue: competitionData.venue,
         date: competitionData.date,
       }),
     });
-
+  handleUnauthorized(response.status);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || data.error || 'Failed to create competition');
     return data;
@@ -76,24 +80,19 @@ export const createCompetition = async (competitionData) => {
   }
 };
 
-/**
- * Update an existing competition
- * @param {string} competitionId - Competition's database ID (_id)
- * @param {Object} competitionData - { category, venue, date }
- * @returns {Promise<Object>} Updated competition object
- */
+
 export const updateCompetition = async (competitionId, competitionData) => {
   try {
     const response = await fetch(`${COMPETITIONS_URL}/${competitionId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+  headers: getAuthHeaders(),
       body: JSON.stringify({
         category: competitionData.category,
         venue: competitionData.venue,
         date: competitionData.date,
       }),
     });
-
+  handleUnauthorized(response.status);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || data.error || 'Failed to update competition');
     return data;
@@ -103,17 +102,14 @@ export const updateCompetition = async (competitionId, competitionData) => {
   }
 };
 
-/**
- * Delete a competition
- * @param {string} competitionId - Competition's database ID (_id)
- * @returns {Promise<Object>} Response from server
- */
+
 export const deleteCompetition = async (competitionId) => {
   try {
     const response = await fetch(`${COMPETITIONS_URL}/${competitionId}`, {
       method: 'DELETE',
+  headers: getAuthHeaders(),
     });
-
+ handleUnauthorized(response.status);
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.message || 'Failed to delete competition');
@@ -126,24 +122,19 @@ export const deleteCompetition = async (competitionId) => {
   }
 };
 
-/**
- * Add a participant to a competition
- * @param {string} competitionId - Competition's database ID (_id)
- * @param {Object} student - Student object { _id, name, grade }
- * @returns {Promise<Object>} Response from server
- */
+
 export const addParticipant = async (competitionId, student) => {
   try {
     const response = await fetch(`${COMPETITIONS_URL}/${competitionId}/participants`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         studentId: student._id,
         studentName: student.name,
         grade: student.grade,
       }),
     });
-
+ handleUnauthorized(response.status);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Failed to add participant');
     return data;
@@ -153,13 +144,7 @@ export const addParticipant = async (competitionId, student) => {
   }
 };
 
-/**
- * Add multiple participants to a competition
- * @param {string} competitionId - Competition's database ID (_id)
- * @param {Array} studentIds - Array of student IDs to add
- * @param {Array} students - Full list of students to look up details from
- * @returns {Promise<void>}
- */
+
 export const addMultipleParticipants = async (competitionId, studentIds, students) => {
   try {
     for (const studentId of studentIds) {
@@ -174,19 +159,14 @@ export const addMultipleParticipants = async (competitionId, studentIds, student
   }
 };
 
-/**
- * Remove a participant from a competition
- * @param {string} competitionId - Competition's database ID (_id)
- * @param {string} studentId - Student's ID
- * @returns {Promise<Object>} Response from server
- */
+
 export const removeParticipant = async (competitionId, studentId) => {
   try {
     const response = await fetch(
       `${COMPETITIONS_URL}/${competitionId}/participants/${studentId}`,
-      { method: 'DELETE' }
+      { method: 'DELETE' ,headers: getAuthHeaders(),}
     );
-
+ handleUnauthorized(response.status);
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.message || 'Failed to remove participant');

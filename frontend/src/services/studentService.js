@@ -1,16 +1,27 @@
 // studentService.js
 // Service layer for student-related API calls
 
-const API_URL = process.env.REACT_APP_STUDENT_API_URL || 'http://localhost:5000/api/students';
+const API_URL = process.env.REACT_APP_STUDENT_API_URL;
 
-/**
- * Fetch all students from the API
- * @returns {Promise<Array>} Array of student objects
- */
+  const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`,
+});
+
+const handleUnauthorized = (status) => {
+  if (status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+};
+
 export const getAllStudents = async () => {
   try {
-    const response = await fetch(API_URL);
-    
+    const response = await fetch(API_URL,{
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -23,21 +34,15 @@ export const getAllStudents = async () => {
   }
 };
 
-/**
- * Create a new student
- * @param {Object} studentData - Student data object
- * @returns {Promise<Object>} Created student object
- */
+
 export const createStudent = async (studentData) => {
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(studentData)
     });
-    
+handleUnauthorized(response.status);
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -50,22 +55,16 @@ export const createStudent = async (studentData) => {
   }
 };
 
-/**
- * Update an existing student
- * @param {string} studentId - Student's database ID (_id)
- * @param {Object} studentData - Updated student data
- * @returns {Promise<Object>} Updated student object
- */
+
 export const updateStudent = async (studentId, studentData) => {
   try {
     const response = await fetch(`${API_URL}/${studentId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(studentData)
     });
-    
+    handleUnauthorized(response.status);
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -78,17 +77,15 @@ export const updateStudent = async (studentId, studentData) => {
   }
 };
 
-/**
- * Delete a student
- * @param {string} studentId - Student's database ID (_id)
- * @returns {Promise<Object>} Response from server
- */
+
 export const deleteStudent = async (studentId) => {
   try {
     const response = await fetch(`${API_URL}/${studentId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+
     });
-    
+    handleUnauthorized(response.status);
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to delete student');
@@ -101,15 +98,14 @@ export const deleteStudent = async (studentId) => {
   }
 };
 
-/**
- * Get a single student by ID
- * @param {string} studentId - Student's database ID (_id)
- * @returns {Promise<Object>} Student object
- */
+
 export const getStudentById = async (studentId) => {
   try {
-    const response = await fetch(`${API_URL}/${studentId}`);
-    
+    const response = await fetch(`${API_URL}/${studentId}`, {
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -122,15 +118,14 @@ export const getStudentById = async (studentId) => {
   }
 };
 
-/**
- * Search students by query
- * @param {string} query - Search query string
- * @returns {Promise<Array>} Filtered array of students
- */
+
 export const searchStudents = async (query) => {
   try {
-    const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`);
-    
+    const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`, {
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

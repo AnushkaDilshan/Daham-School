@@ -8,6 +8,7 @@ import Sidebar  from './components/sideBar';
 import PrefectManagement from './view/PrefectManagement';
 import Competition from './view/competition';
 import Teachers from './view/Teachers';
+import UserManagement from './view/UserManagement';
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,7 +60,11 @@ function App() {
             <Teachers />
           </DashboardLayout>
         } />
-        
+        <Route path="/user-dashboard" element={
+  <DashboardLayout>
+    <UserManagement />
+  </DashboardLayout>
+} />
         {/* 
         <Route path="/stock" element={<StockManager />} />
         <Route path="/payment" element={<Payment />} />

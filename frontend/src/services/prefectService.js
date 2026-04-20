@@ -3,6 +3,17 @@
 
 const API_URL = `${process.env.REACT_APP_API_URL}/prefects` || 'http://localhost:5000/api/prefects';
 
+const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`,
+});
+
+const handleUnauthorized = (status) => {
+  if (status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+};
 /**
  * Check if end date has passed and return appropriate status
  * @param {string} endDate - ISO date string
@@ -23,8 +34,10 @@ export const getStatusBasedOnDate = (endDate) => {
  */
 export const getAllPrefects = async () => {
   try {
-    const response = await fetch(API_URL);
-
+    const response = await fetch(API_URL,{
+      headers: getAuthHeaders(),
+    });
+handleUnauthorized(response.status);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -42,14 +55,14 @@ export const getAllPrefects = async () => {
   }
 };
 
-/**
- * Fetch all students (used for the student selector when adding a prefect)
- * @returns {Promise<Array>} Array of student objects
- */
+
 export const getAllStudents = async () => {
   try {
     const studentsUrl = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api') + '/students';
-    const response = await fetch(studentsUrl);
+    const response = await fetch(studentsUrl, {
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -62,21 +75,17 @@ export const getAllStudents = async () => {
   }
 };
 
-/**
- * Create a new prefect
- * @param {Object} prefectData - Prefect form data
- * @returns {Promise<Object>} Created prefect object
- */
+
 export const createPrefect = async (prefectData) => {
   try {
     const status = getStatusBasedOnDate(prefectData.endDate);
 
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ ...prefectData, status }),
     });
-
+handleUnauthorized(response.status);
     const data = await response.json();
 
     if (!response.ok) {
@@ -90,22 +99,17 @@ export const createPrefect = async (prefectData) => {
   }
 };
 
-/**
- * Update an existing prefect
- * @param {string} prefectId - Prefect's database ID (_id)
- * @param {Object} prefectData - Updated prefect data
- * @returns {Promise<Object>} Updated prefect object
- */
+
 export const updatePrefect = async (prefectId, prefectData) => {
   try {
     const status = getStatusBasedOnDate(prefectData.endDate);
 
     const response = await fetch(`${API_URL}/${prefectId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ ...prefectData, status }),
     });
-
+    handleUnauthorized(response.status);  
     const data = await response.json();
 
     if (!response.ok) {
@@ -119,17 +123,14 @@ export const updatePrefect = async (prefectId, prefectData) => {
   }
 };
 
-/**
- * Delete a prefect
- * @param {string} prefectId - Prefect's database ID (_id)
- * @returns {Promise<Object>} Response from server
- */
+
 export const deletePrefect = async (prefectId) => {
   try {
     const response = await fetch(`${API_URL}/${prefectId}`, {
       method: 'DELETE',
+      headers: getAuthHeaders(),
     });
-
+handleUnauthorized(response.status);
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.message || 'Failed to delete prefect');
@@ -142,14 +143,13 @@ export const deletePrefect = async (prefectId) => {
   }
 };
 
-/**
- * Get a single prefect by ID
- * @param {string} prefectId - Prefect's database ID (_id)
- * @returns {Promise<Object>} Prefect object
- */
+
 export const getPrefectById = async (prefectId) => {
   try {
-    const response = await fetch(`${API_URL}/${prefectId}`);
+    const response = await fetch(`${API_URL}/${prefectId}`, {
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

@@ -4,16 +4,28 @@
 const API_BASE = process.env.REACT_APP_STUDENT_API_URL;
 const API_URL = API_BASE && API_BASE.startsWith('http') 
   ? API_BASE 
-  : 'http://localhost:5000/api/students';
+  : 'https://daham-school.onrender.com/api/students';
 
-/**
- * Fetch all students from the API
- * @returns {Promise<Array>} Array of student objects
- */
+
+
+  const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`,
+});
+
+const handleUnauthorized = (status) => {
+  if (status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  }
+};
 export const getAllStudents = async () => {
   try {
-    const response = await fetch(API_URL);
-    
+    const response = await fetch(API_URL,{
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
+
     if (!response.ok) {
       throw new Error('Failed to fetch students');
     }
@@ -26,17 +38,14 @@ export const getAllStudents = async () => {
   }
 };
 
-/**
- * Delete a student by ID
- * @param {string} studentId - Student's database ID
- * @returns {Promise<Object>} Response from server
- */
+
 export const deleteStudent = async (studentId) => {
   try {
     const response = await fetch(`${API_URL}/${studentId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders(),
     });
-
+handleUnauthorized(response.status);
     if (!response.ok) {
       throw new Error('Failed to delete student');
     }
@@ -48,22 +57,18 @@ export const deleteStudent = async (studentId) => {
   }
 };
 
-/**
- * Update a student's information
- * @param {string} studentId - Student's database ID
- * @param {Object} studentData - Updated student data
- * @returns {Promise<Object>} Updated student object
- */
+
 export const updateStudent = async (studentId, studentData) => {
   try {
     const response = await fetch(`${API_URL}/${studentId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(studentData)
     });
-
+handleUnauthorized(response.status);
+    if (!response.ok) {
+      throw new Error('Failed to update student');
+    }
     if (!response.ok) {
       throw new Error('Failed to update student');
     }
@@ -94,15 +99,14 @@ export const bulkUpdateGrades = async (students) => {
   }
 };
 
-/**
- * Get a single student by ID
- * @param {string} studentId - Student's database ID
- * @returns {Promise<Object>} Student object
- */
+
 export const getStudentById = async (studentId) => {
   try {
-    const response = await fetch(`${API_URL}/${studentId}`);
-    
+    const response = await fetch(`${API_URL}/${studentId}`, {
+      headers: getAuthHeaders(),
+    });
+    handleUnauthorized(response.status);
+
     if (!response.ok) {
       throw new Error('Failed to fetch student');
     }

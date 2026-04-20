@@ -1,22 +1,61 @@
 import React, { useState } from 'react';
 import { 
-  Users, UserPlus , GraduationCap, FileText, BarChart3, Settings, Bell, Home,
-  ChevronLeft, ChevronRight, Menu, X
+  Users, UserPlus, GraduationCap, FileText, BarChart3, Settings, Bell, Home,
+  ChevronLeft, ChevronRight, Menu, X, LogOut
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+import { useUser } from '../context/UserContext'; // adjust path as needed
 
 const Sidebar = ({ currentPage, onNavigate }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, setUser } = useUser();
+  const navigate = useNavigate();
+
+  // Get display name: prefer UserContext, fallback to JWT token
+const getDisplayName = () => {
+  if (user?.name) return user.name;
+  if (user?.username) return user.username;
+  if (user?.email) return user.email; // ← add this
+  try {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const decoded = jwtDecode(token);
+      return decoded.name || decoded.username || decoded.email || 'User';
+    }
+  } catch (e) {}
+  return 'User';
+};
+
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setUser(null); // clears localStorage via UserContext useEffect
+    navigate('/');
+  };
+
+  const displayName = getDisplayName();
+  const initials = getInitials(displayName);
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', href: 'dashboard' },
+    // { icon: Home, label: 'Dashboard', href: 'dashboard' },
+       ...(user?.role === 'admin' ? [{ icon: Home, label: 'Dashboard', href: 'dashboard' }] : []),
     { icon: Users, label: 'Students', href: 'studentView', active: currentPage === 'studentView' },
     { icon: GraduationCap, label: 'Teachers', href: 'teachers', active: currentPage === 'teachers' },
-    { icon: UserPlus , label: 'Prefect', href: 'prefectManagement', active: currentPage === 'prefectManagement'  },
-    { icon: FileText, label: 'Competition', href: 'competition', active: currentPage === 'competition'},
-    { icon: BarChart3, label: 'Reports', href: 'reports' },
-    { icon: Bell, label: 'Notifications', href: 'notifications', badge: '5' },
-    { icon: Settings, label: 'Settings', href: 'settings' }
+    { icon: UserPlus, label: 'Prefect', href: 'prefectManagement', active: currentPage === 'prefectManagement' },
+    { icon: FileText, label: 'Competition', href: 'competition', active: currentPage === 'competition' },
+    // { icon: BarChart3, label: 'Reports', href: 'reports' },
+    // { icon: Bell, label: 'Notifications', href: 'notifications', badge: '5' },
+    // { icon: Settings, label: 'Settings', href: 'settings' }
   ];
 
   const MenuItem = ({ item, isMobile = false }) => {
@@ -57,6 +96,37 @@ const Sidebar = ({ currentPage, onNavigate }) => {
     );
   };
 
+  // Reusable user profile + logout block
+  const UserProfileBlock = ({ isMobile = false }) => (
+    <div className="p-4 border-t border-gray-700">
+      <div className={`flex items-center gap-3 ${isCollapsed && !isMobile ? 'justify-center flex-col' : ''}`}>
+        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0">
+          {initials}
+        </div>
+        {(!isCollapsed || isMobile) && (
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{displayName}</p>
+            <p className="text-xs text-gray-400">Administrator</p>
+          </div>
+        )}
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          title="Logout"
+          className={`
+            flex items-center gap-1 text-gray-400 hover:text-red-400 transition-colors p-1 rounded
+            ${isCollapsed && !isMobile ? 'mt-1' : ''}
+          `}
+        >
+          <LogOut size={16} />
+          {(!isCollapsed || isMobile) && (
+            <span className="text-xs">Logout</span>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* Mobile Menu Button */}
@@ -80,7 +150,6 @@ const Sidebar = ({ currentPage, onNavigate }) => {
         hidden lg:flex flex-col bg-gray-800 text-white h-screen transition-all duration-300 relative
         ${isCollapsed ? 'w-16' : 'w-64'}
       `}>
-        {/* Header */}
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
             {!isCollapsed && (
@@ -98,27 +167,13 @@ const Sidebar = ({ currentPage, onNavigate }) => {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item, index) => (
             <MenuItem key={index} item={item} />
           ))}
         </nav>
 
-        {/* User Profile */}
-        <div className="p-4 border-t border-gray-700">
-          <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-semibold">
-              JD
-            </div>
-            {!isCollapsed && (
-              <div className="flex-1">
-                <p className="text-sm font-medium">John Doe</p>
-                <p className="text-xs text-gray-400">Administrator</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <UserProfileBlock />
       </div>
 
       {/* Mobile Sidebar */}
@@ -126,7 +181,6 @@ const Sidebar = ({ currentPage, onNavigate }) => {
         lg:hidden fixed left-0 top-0 h-full w-64 bg-gray-800 text-white z-50 transform transition-transform duration-300
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* Mobile Header */}
         <div className="p-4 border-b border-gray-700 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-blue-400">EduManage</h1>
@@ -140,25 +194,13 @@ const Sidebar = ({ currentPage, onNavigate }) => {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item, index) => (
             <MenuItem key={index} item={item} isMobile={true} />
           ))}
         </nav>
 
-        {/* Mobile User Profile */}
-        <div className="p-4 border-t border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-semibold">
-              JD
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">John Doe</p>
-              <p className="text-xs text-gray-400">Administrator</p>
-            </div>
-          </div>
-        </div>
+        <UserProfileBlock isMobile={true} />
       </div>
     </>
   );
