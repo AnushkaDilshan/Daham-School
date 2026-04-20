@@ -64,10 +64,10 @@ exports.createTeacher = async (req, res) => {
 
     const { 
       teacherId, name, dateOfBirth, gender, address, phoneNumber, 
-      city, postalcode, policeName,  // ADDED
-      email, password, qualification, experience, subject, 
+      city, postalcode, policeName,
+      email, qualification, experience, subject, 
       joinedDate, employmentType, salary,
-      nic, bankName, bankNumber  // ADDED
+      nic, bankName, bankNumber
     } = req.body;
 
     // Check if teacherId already exists
@@ -88,7 +88,7 @@ exports.createTeacher = async (req, res) => {
       }
     }
 
-    // Create new teacher with all fields
+    // Create new teacher with all fields (no password)
     const newTeacher = new Teacher({
       teacherId,
       name,
@@ -96,20 +96,19 @@ exports.createTeacher = async (req, res) => {
       gender,
       address,
       phoneNumber,
-      city,          // ADDED
-      postalcode,    // ADDED
-      policeName,    // ADDED
+      city,
+      postalcode,
+      policeName,
       email,
-      password,
       qualification,
       experience,
       subject,
       joinedDate,
       employmentType,
       salary,
-      nic,           // ADDED
-      bankName,      // ADDED
-      bankNumber,    // ADDED
+      nic,
+      bankName,
+      bankNumber,
       status: 'Active'
     });
 
@@ -117,17 +116,13 @@ exports.createTeacher = async (req, res) => {
 
     const savedTeacher = await newTeacher.save();
 
-    // Remove password from response
-    const teacherResponse = savedTeacher.toObject();
-    delete teacherResponse.password;
-
     res.status(201).json({
       message: 'Teacher created successfully',
-      teacher: teacherResponse
+      teacher: savedTeacher.toObject()
     });
   } catch (error) {
     console.error('Error creating teacher:', error);
-    console.error('Error details:', error.errors); // Log validation errors
+    console.error('Error details:', error.errors);
     res.status(500).json({ 
       message: 'Error creating teacher', 
       error: error.message 

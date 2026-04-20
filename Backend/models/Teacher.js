@@ -42,10 +42,7 @@ const teacherSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
-  password: {
-    type: String,
-   
-  },
+
   qualification: {
     type: String
   },
