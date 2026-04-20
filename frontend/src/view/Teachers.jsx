@@ -16,7 +16,7 @@ const TeacherManagement = () => {
   const [formData, setFormData] = useState({
     teacherId: '', name: '', dateOfBirth: '', gender: '', address: '',
     phoneNumber: '', city: '', postalcode: '', policeName: '', email: '',
-    password: '', qualification: '', experience: '', subject: '',
+    password: '123', qualification: '', experience: '', subject: '',
     joinedDate: '', employmentType: '', salary: '', nic: '',
     bankName: '', bankNumber: '', status: 'Active'
   });
@@ -100,11 +100,11 @@ const TeacherManagement = () => {
     if (!formData.postalcode.trim()) errors.postalcode = 'Postal code is required';
     else if (!/^[0-9]{5}$/.test(formData.postalcode)) errors.postalcode = 'Must be 5 digits';
     if (!formData.policeName.trim()) errors.policeName = 'Police name is required';
-    if (modalMode === 'add') {
-      if (!formData.password) errors.password = 'Password is required';
-      else if (formData.password.length < 6) errors.password = 'Min 6 characters';
-      else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])/.test(formData.password)) errors.password = 'Need uppercase, lowercase & number';
-    }
+    // if (modalMode === 'add') {
+    //   if (!formData.password) errors.password = 'Password is required';
+    //   else if (formData.password.length < 6) errors.password = 'Min 6 characters';
+    //   else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])/.test(formData.password)) errors.password = 'Need uppercase, lowercase & number';
+    // }
     if (!formData.subject.trim()) errors.subject = 'Subject is required';
     if (formData.experience !== '' && formData.experience !== null) {
       const exp = Number(formData.experience);
@@ -433,14 +433,14 @@ const TeacherManagement = () => {
                   {validationErrors.nic && <p className="text-red-500 text-xs mt-1">{validationErrors.nic}</p>}
                 </div>
 
-                {modalMode === 'add' && (
+                {/* {modalMode === 'add' && (
                   <div>
                     <label className={baseLabel}>Password <span className="text-red-400">*</span></label>
                     <input type="password" name="password" value={formData.password} onChange={handleInputChange} minLength="6"
                       className={baseInput(validationErrors.password)} />
                     {validationErrors.password && <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>}
                   </div>
-                )}
+                )} */}
 
                 {/* ── Contact Info ── */}
                 {sectionHeader('Contact & Address', 'violet')}

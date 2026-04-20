@@ -506,10 +506,10 @@ const StudentManagement = () => {
                                 <User size={16} />
                                 View
                               </button>
-                              <button className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                              {/* <button className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
                                 <Edit2 size={16} />
                                 Edit
-                              </button>
+                              </button> */}
                               <button 
                                 onClick={() => handleDelete(student._id, student.name)}
                                 className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
