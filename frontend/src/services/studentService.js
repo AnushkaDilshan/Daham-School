@@ -1,6 +1,8 @@
 // studentService.js
 // Service layer for student-related API calls
 
+
+
 const API_URL = process.env.REACT_APP_STUDENT_API_URL;
 
   const getAuthHeaders = () => ({
@@ -37,7 +39,7 @@ export const getAllStudents = async () => {
 
 export const createStudent = async (studentData) => {
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${API_URL}/students`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(studentData)
