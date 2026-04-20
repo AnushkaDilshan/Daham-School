@@ -3,7 +3,7 @@
 
 
 
-const API_URL = process.env.REACT_APP_STUDENT_API_URL;
+const API_URL = `${process.env.REACT_APP_API_URL}/students`;
 
   const getAuthHeaders = () => ({
   'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ export const getAllStudents = async () => {
 
 export const createStudent = async (studentData) => {
   try {
-    const response = await fetch(`${API_URL}/students`, {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(studentData)
