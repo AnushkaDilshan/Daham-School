@@ -378,12 +378,7 @@ const PrefectManagement = () => {
   const prefectPositions = [
     'Head Prefect',
     'Deputy Head Prefect',
-    'Sports Prefect',
-    'Library Prefect',
-    'Discipline Prefect',
-    'Cultural Prefect',
-    'Academic Prefect',
-    'Social Service Prefect'
+    'Prefect',
   ];
 
   const fetchPrefects = async () => {
