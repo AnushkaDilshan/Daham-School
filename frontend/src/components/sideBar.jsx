@@ -48,7 +48,7 @@ const getDisplayName = () => {
 
   const menuItems = [
     // { icon: Home, label: 'Dashboard', href: 'dashboard' },
-       ...(user?.role === 'admin' ? [{ icon: Home, label: 'Dashboard', href: 'dashboard' }] : []),
+       ...(user?.role === 'admin' ? [{ icon: Home, label: 'Dashboard', href: 'user-dashboard' }] : []),
     { icon: Users, label: 'Students', href: 'studentView', active: currentPage === 'studentView' },
     { icon: GraduationCap, label: 'Teachers', href: 'teachers', active: currentPage === 'teachers' },
     { icon: UserPlus, label: 'Prefect', href: 'prefectManagement', active: currentPage === 'prefectManagement' },
