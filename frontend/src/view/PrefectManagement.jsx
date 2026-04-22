@@ -3,7 +3,7 @@ import {
   Search, UserPlus, Edit2, Trash2, Award, User, Phone, Calendar, X, Shield
 } from 'lucide-react';
 import * as prefectService from '../services/prefectService';
-
+import { useUser } from '../context/UserContext';
 // Helper component for Add Modal - moved outside to prevent re-renders
 const AddPrefectModal = ({ 
   show, 
@@ -360,6 +360,7 @@ const PrefectManagement = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const { user } = useUser();
   const [formData, setFormData] = useState({
     studentId: '',
     position: '',
@@ -586,6 +587,8 @@ const PrefectManagement = () => {
             </div>
 
             <div className="flex gap-3 pt-4">
+              {user?.role === 'admin' && (
+    <>
               <button
                 onClick={() => {
                   setShowModal(false);
@@ -606,6 +609,8 @@ const PrefectManagement = () => {
                 <Trash2 size={18} />
                 Remove Prefect
               </button>
+              </>
+               )}
             </div>
           </div>
         </div>
@@ -798,6 +803,8 @@ const PrefectManagement = () => {
                           >
                             <User size={18} />
                           </button>
+                           {user?.role === 'admin' && (
+    <>
                           <button
                             onClick={() => handleEdit(prefect)}
                             className="text-green-600 hover:text-green-800 p-2 hover:bg-green-100 rounded-lg transition-all"
@@ -812,6 +819,8 @@ const PrefectManagement = () => {
                           >
                             <Trash2 size={18} />
                           </button>
+                          </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -872,6 +881,8 @@ const PrefectManagement = () => {
                       <User size={16} />
                       View
                     </button>
+                    {user?.role === 'admin' && (
+    <>
                     <button
                       onClick={() => handleEdit(prefect)}
                       className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
@@ -885,6 +896,8 @@ const PrefectManagement = () => {
                     >
                       <Trash2 size={16} />
                     </button>
+                    </>
+                     )}
                   </div>
                 </div>
               ))}

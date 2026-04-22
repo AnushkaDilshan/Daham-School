@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, Eye, X, Check, GraduationCap, BookOpen, User } from 'lucide-react';
 import * as teacherService from '../services/teacherService';
+import { useUser } from '../context/UserContext';
 
 const TeacherManagement = () => {
   const [teachers, setTeachers] = useState([]);
@@ -12,7 +13,7 @@ const TeacherManagement = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
-
+const { user } = useUser();
   const [formData, setFormData] = useState({
     teacherId: '', name: '', dateOfBirth: '', gender: '', address: '',
     phoneNumber: '', city: '', postalcode: '', policeName: '', email: '',
@@ -330,6 +331,8 @@ const TeacherManagement = () => {
                             >
                               <Eye size={16} />
                             </button>
+                             {user?.role === 'admin' && (
+                              <>
                             <button
                               onClick={() => openModal('edit', teacher)}
                               className="p-2 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition"
@@ -344,6 +347,8 @@ const TeacherManagement = () => {
                             >
                               <Trash2 size={16} />
                             </button>
+                            </>
+                             )}
                           </div>
                         </td>
                       </tr>
